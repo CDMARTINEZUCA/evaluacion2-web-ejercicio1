@@ -4,6 +4,7 @@ const app = express();
 const puerto = 3067;
 const cors = require("cors");
 
+app.use(cors());
 app.use(express.json());
 app.use("/api/reactor", reactorRoutes);
 
