@@ -154,15 +154,15 @@ const actualizarUnidades = (req, res) => {
       return res.status(400).json({ mensaje: "Transacción no válida o no especificada" });
     }
 
-    calcularTotal(); 
+    calcularTotal();
 
     return res.status(200).json({
       mensaje: "Carga actualizada correctamente",
       transaccion: transaccionElegida,
       Cantidad: cant,
-      itemModificado: itemNave,         
+      itemModificado: itemNave,
       creditosRestantes: estadoNave.creditos,
-      totalCostoNave: estadoNave.total,       
+      totalCostoNave: estadoNave.total,
       inventarioBaseStockRestante: itemBase.stock
     })
   } catch (error) {
@@ -182,12 +182,16 @@ const eliminarCarga = (req, res) => {
       inventario.push(cargaeliminada)
     }
 
+    estadoNave.creditos += cargaeliminada.stock * cargaeliminada.precio;
     calcularTotal();
 
     return res.status(200).json({
       message: "Carga eliminada correctamente de la nave y devuelta a base",
-    Nave: cargaeliminada,
-    Base: inventario
+      /*Nave: cargaeliminada,
+      Base: inventario,*/
+      creditosRestantes: estadoNave.creditos,
+      totalCostoNave: estadoNave.total,
+
     });
   } catch (error) {
     res.status(500).json({ mensaje: 'Error al eliminar carga' })
