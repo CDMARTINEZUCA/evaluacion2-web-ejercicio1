@@ -76,25 +76,6 @@ function CatalogoBase({
                   </div>
 
                   <div className="d-flex gap-2 mt-3">
-                    <Input
-                      type="number"
-                      min="1"
-                      max={item.stock}
-                      step="1"
-                      value={cantidadActual}
-                      onChange={(e) =>
-                        handleInputChange(
-                          item.id,
-                          e.target.value,
-                          item.stock
-                        )
-                      }
-                      disabled={agotado || calculando}
-                      aria-label={`Cantidad a añadir para ${item.nombre}`}
-                      style={{ width: '85px' }}
-                    
-                    />
-
                     <Button
                       className="btn-cargar"
                       onClick={() => onAgregarCarga(item.id, Number(cantidadActual))}

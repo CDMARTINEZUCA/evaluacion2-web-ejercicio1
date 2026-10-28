@@ -9,6 +9,7 @@ import {
 
 import PanelSuperior from './PanelSuperior';
 import CatalogoBase from './Catalogo';
+import BodegaCarga from './BodegaCarga';      
 
 function ModuloCarga() {
   const API_URL = 'http://localhost:3005/api';
@@ -182,7 +183,14 @@ function ModuloCarga() {
             calculando={calculando}
           />
         </Col>
-
+        <Col lg="4" md="5" xs="12">
+          <BodegaCarga
+            itemsCargados={estadoNave.itemsCargados}
+            onActualizarUnidades={handleActualizarUnidades}
+            onDesembarcar={handleDesembarcar}
+            calculando={calculando}
+          />
+        </Col>
       </Row>
     </Container>
   );
