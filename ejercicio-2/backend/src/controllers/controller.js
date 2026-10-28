@@ -2,9 +2,9 @@ const { json } = require("express");
 const inventario = require("../data/data.js");
 
 let estadoNave = {
-  creditos: 220.0,
+  creditos: 500.0,
   itemsCargados: [],
-  total: 280.0,
+  total: 0.0,
 };
 
 const calcularTotal = () => {
