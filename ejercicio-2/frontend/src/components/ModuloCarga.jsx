@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Row,
@@ -11,22 +10,23 @@ import PanelSuperior from './PanelSuperior';
 import CatalogoBase from './Catalogo';
 import BodegaCarga from './BodegaCarga';      
 
-const API_URL = 'http://localhost:3005/api';
-
 function ModuloCarga() {
+  const API_URL = 'http://localhost:3005/api';
+
   const [estadoNave, setEstadoNave] = useState({
     creditos: 500,
     itemsCargados: [],
-    total: 0,
-    expiraEn: null,
-    misionIniciada: false
+    total: 0
   });
 
   const [inventario, setInventario] = useState([]);
 
   const [errorMensaje, setErrorMensaje] = useState('');
   const [calculando, setCalculando] = useState(false);
-  const [segundosRestantes, setSegundosRestantes] = useState(0);
+
+  const esperarTiempoMinimo = (ms = 1000) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  };
 
   const cargarDatosActualizados = async () => {
     const [resInventario, resCarga] = await Promise.all([
@@ -47,45 +47,6 @@ function ModuloCarga() {
     setEstadoNave(dataCarga);
   };
 
-  const handleConfirmarCarga = useCallback(async (boton) => {
-    setErrorMensaje('');
-    setCalculando(true);
-
-    try {
-      const res = await fetch(`${API_URL}/carga/confirmar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ boton })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.mensaje || 'No se pudo confirmar la carga.');
-      }
-
-      if (data.inventario) {
-        setInventario(data.inventario);
-      }
-
-      if (data.cargaTotal) {
-        setEstadoNave(data.cargaTotal);
-      } else {
-        await cargarDatosActualizados();
-      }
-
-      if (boton) {
-        setErrorMensaje(data.mensaje);
-      }
-    } catch (error) {
-      setErrorMensaje(error.message || 'Ocurrió un error al confirmar la carga.');
-    } finally {
-      setCalculando(false);
-    }
-  }, []);
-
   useEffect(() => {
     const iniciar = async () => {
       try {
@@ -98,52 +59,21 @@ function ModuloCarga() {
     iniciar();
   }, []);
 
-  useEffect(() => {
-    if (
-      !estadoNave.expiraEn ||
-      estadoNave.misionIniciada ||
-      estadoNave.itemsCargados.length === 0
-    ) {
-      setSegundosRestantes(0);
-      return undefined;
-    }
-
-    const actualizarTemporizador = () => {
-      const segundos = Math.max(
-        0,
-        Math.ceil((estadoNave.expiraEn - Date.now()) / 1000)
-      );
-
-      setSegundosRestantes(segundos);
-
-      if (segundos === 0) {
-        void handleConfirmarCarga(false);
-      }
-    };
-
-    actualizarTemporizador();
-    const intervalo = window.setInterval(actualizarTemporizador, 1000);
-
-    return () => window.clearInterval(intervalo);
-  }, [
-    estadoNave.expiraEn,
-    estadoNave.misionIniciada,
-    estadoNave.itemsCargados.length,
-    handleConfirmarCarga
-  ]);
-
   const handleAgregarCarga = async (equipoId, cantidad) => {
     setErrorMensaje('');
     setCalculando(true);
 
     try {
-      const res = await fetch(`${API_URL}/carga/agregar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ equipoId, cantidad })
-      });
+      const [res] = await Promise.all([
+        fetch(`${API_URL}/carga/agregar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ equipoId, cantidad })
+        }),
+        esperarTiempoMinimo(1000) 
+      ]);
 
       const data = await res.json();
 
@@ -179,19 +109,22 @@ function ModuloCarga() {
     setCalculando(true);
 
     try {
-      const res = await fetch(
-        `${API_URL}/carga/actualizar-unidades/${equipoId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            cantidad: Math.abs(diferencia),
-            transaccionElegida: diferencia > 0 ? 'Agregar' : 'Eliminar'
-          })
-        }
-      );
+      const [res] = await Promise.all([
+        fetch(
+          `${API_URL}/carga/actualizar-unidades/${equipoId}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              cantidad: Math.abs(diferencia),
+              transaccionElegida: diferencia > 0 ? 'Agregar' : 'Eliminar'
+            })
+          }
+        ),
+        esperarTiempoMinimo(1000) 
+      ]);
 
       const data = await res.json();
 
@@ -212,12 +145,15 @@ function ModuloCarga() {
     setCalculando(true);
 
     try {
-      const res = await fetch(
-        `${API_URL}/carga/eliminar/${equipoId}`,
-        {
-          method: 'DELETE'
-        }
-      );
+      const [res] = await Promise.all([
+        fetch(
+          `${API_URL}/carga/eliminar/${equipoId}`,
+          {
+            method: 'DELETE'
+          }
+        ),
+        esperarTiempoMinimo(1000) 
+      ]);
 
       const data = await res.json();
 
@@ -264,9 +200,6 @@ function ModuloCarga() {
             itemsCargados={estadoNave.itemsCargados}
             onActualizarUnidades={handleActualizarUnidades}
             onDesembarcar={handleDesembarcar}
-            onConfirmarCarga={handleConfirmarCarga}
-            segundosRestantes={segundosRestantes}
-            misionIniciada={estadoNave.misionIniciada}
             calculando={calculando}
           />
         </Col>
