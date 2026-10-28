@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Container,
   Row,
@@ -9,6 +9,8 @@ import {
 import PanelSuperior from './PanelSuperior';
 import CatalogoBase from './Catalogo';
 import BodegaCarga from './BodegaCarga';      
+
+const TIEMPO_MISION_SEGUNDOS = 100;
 
 function ModuloCarga() {
   const API_URL = 'http://localhost:3005/api';
@@ -23,6 +25,10 @@ function ModuloCarga() {
 
   const [errorMensaje, setErrorMensaje] = useState('');
   const [calculando, setCalculando] = useState(false);
+  const [tiempoRestante, setTiempoRestante] = useState(TIEMPO_MISION_SEGUNDOS);
+  const [misionActiva, setMisionActiva] = useState(false);
+  const [misionConfirmada, setMisionConfirmada] = useState(false);
+  const finalizandoMision = useRef(false);
 
   const esperarTiempoMinimo = (ms = 1000) => {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -50,6 +56,19 @@ function ModuloCarga() {
   useEffect(() => {
     const iniciar = async () => {
       try {
+        const resReinicio = await fetch(`${API_URL}/carga/confirmar`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ boton: false })
+        });
+
+        if (!resReinicio.ok) {
+          const data = await resReinicio.json();
+          throw new Error(data.mensaje || 'No se pudo iniciar una nueva carga.');
+        }
+
         await cargarDatosActualizados();
       } catch (error) {
         setErrorMensaje(error.message);
@@ -58,6 +77,58 @@ function ModuloCarga() {
 
     iniciar();
   }, []);
+
+  const devolverCargaAlInventario = useCallback(async () => {
+    if (finalizandoMision.current) return;
+
+    finalizandoMision.current = true;
+    setCalculando(true);
+
+    try {
+      const itemsCargados = [...estadoNave.itemsCargados];
+
+      for (const item of itemsCargados) {
+        const res = await fetch(`${API_URL}/carga/eliminar/${item.id}`, {
+          method: 'DELETE'
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.mensaje || 'No se pudo devolver la carga.');
+        }
+      }
+
+      await cargarDatosActualizados();
+      setTiempoRestante(TIEMPO_MISION_SEGUNDOS);
+      setMisionActiva(false);
+      setErrorMensaje('El tiempo terminó. La carga volvió al inventario.');
+    } catch (error) {
+      setErrorMensaje(error.message || 'No se pudo devolver la carga al inventario.');
+    } finally {
+      finalizandoMision.current = false;
+      setCalculando(false);
+    }
+  }, [estadoNave.itemsCargados]);
+
+  useEffect(() => {
+    if (!misionActiva || misionConfirmada) return undefined;
+
+    if (tiempoRestante === 0) {
+      devolverCargaAlInventario();
+      return undefined;
+    }
+
+    const temporizador = setInterval(() => {
+      setTiempoRestante((tiempo) => Math.max(0, tiempo - 1));
+    }, 1000);
+
+    return () => clearInterval(temporizador);
+  }, [
+    tiempoRestante,
+    misionActiva,
+    misionConfirmada,
+    devolverCargaAlInventario
+  ]);
 
   const handleAgregarCarga = async (equipoId, cantidad) => {
     setErrorMensaje('');
@@ -83,9 +154,48 @@ function ModuloCarga() {
 
       setEstadoNave(data.carga);
       setInventario(data.inventario);
+      if (!misionActiva) {
+        setTiempoRestante(TIEMPO_MISION_SEGUNDOS);
+        setMisionActiva(true);
+        setMisionConfirmada(false);
+      }
     } catch (error) {
       setErrorMensaje(error.message || 'Ocurrió un error al agregar.');
     } finally {
+      setCalculando(false);
+    }
+  };
+
+  const handleConfirmarMision = async () => {
+    if (!misionActiva || misionConfirmada || finalizandoMision.current) {
+      return;
+    }
+
+    setErrorMensaje('');
+    setCalculando(true);
+    finalizandoMision.current = true;
+
+    try {
+      const res = await fetch(`${API_URL}/carga/confirmar`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ boton: true })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.mensaje || 'No se pudo confirmar la carga.');
+      }
+
+      setMisionConfirmada(true);
+      setMisionActiva(false);
+      setErrorMensaje(data.mensaje);
+    } catch (error) {
+      setErrorMensaje(error.message || 'No se pudo confirmar la carga.');
+    } finally {
+      finalizandoMision.current = false;
       setCalculando(false);
     }
   };
@@ -179,9 +289,16 @@ function ModuloCarga() {
         </UncontrolledAlert>
       )}
 
-      <PanelSuperior estadoNave={estadoNave} />
+      <PanelSuperior
+        estadoNave={estadoNave}
+        tiempoRestante={tiempoRestante}
+        misionActiva={misionActiva}
+        misionConfirmada={misionConfirmada}
+        confirmando={calculando}
+        onConfirmarMision={handleConfirmarMision}
+      />
 
-      {calculando && (
+      {calculando && !misionConfirmada && (
         <p className="text-center fw-bold mt-3">
           Calculando peso...
         </p>
@@ -192,7 +309,7 @@ function ModuloCarga() {
           <CatalogoBase
             inventario={inventario}
             onAgregarCarga={handleAgregarCarga}
-            calculando={calculando}
+            calculando={calculando || misionConfirmada}
           />
         </Col>
         <Col lg="4" md="5" xs="12">

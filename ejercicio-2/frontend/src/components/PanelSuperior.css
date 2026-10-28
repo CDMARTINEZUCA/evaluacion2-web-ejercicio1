@@ -51,3 +51,12 @@
 .panel-value.total {
   color: #e94560;
 }
+
+.panel-value.contador {
+  color: #f7d154;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-confirmacion .btn {
+  font-weight: bold;
+}
