@@ -89,14 +89,16 @@ function CatalogoBase({
                           item.stock
                         )
                       }
-
+                      disabled={agotado || calculando}
+                      aria-label={`Cantidad a añadir para ${item.nombre}`}
+                      style={{ width: '85px' }}
                     
                     />
 
                     <Button
                       className="btn-cargar"
                       onClick={() => onAgregarCarga(item.id, Number(cantidadActual))}
-                     
+                      disabled={agotado || calculando}
                     >
                       {agotado ? 'Agotado en Base' : 'Añadir'}
                     </Button>
