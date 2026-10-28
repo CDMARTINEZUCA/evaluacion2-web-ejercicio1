@@ -64,7 +64,7 @@ const obtenerCarga = (req, res) => {
 
 const agregarCarga = (req, res) => {
   try {
-    
+
     if (verificarTiempoExpirado()) {
       return res.status(403).json({ mensaje: "La ventana de lanzamiento se ha cerrado. La sesión expiró." });
     }
@@ -137,7 +137,7 @@ const agregarCarga = (req, res) => {
 
 const actualizarUnidades = (req, res) => {
   try {
-    
+
     if (verificarTiempoExpirado()) {
       return res.status(403).json({ mensaje: "La ventana de lanzamiento se ha cerrado. La sesión expiró." });
     }
@@ -285,9 +285,13 @@ const confirmarCarga = (req, res) => {
     }
 
     if (boton === true) {
-      tiempoInicioMision = null;
+      if (estadoNave.itemsCargados.length === 0) {
+        return res.status(400).json({
+          mensaje: "Ingrese al menos un suministro antes de confirmar la carga"
+        });
+      }
       return res.status(200).json({
-        mensaje: "Misión confirmada, buena suerte en tu viaje",
+        mensaje: "Misión confirmada, buena suerte en tu viaje"
       });
     }
   } catch (error) {
