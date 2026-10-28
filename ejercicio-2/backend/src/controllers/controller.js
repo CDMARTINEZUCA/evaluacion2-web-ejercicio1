@@ -2,9 +2,24 @@ const { json } = require("express");
 const inventario = require("../data/data.js");
 
 let estadoNave = {
-  creditos: 500.0,
-  itemsCargados: [],
-  total: 0.0,
+  creditos: 220.0,
+  itemsCargados: [
+    {
+    id: 201,
+    nombre: "Tanque de Oxígeno XL",
+    precio: 50.0,
+    stock: 5,
+    categoria: "Soporte Vital",
+  },
+  {
+    id: 202,
+    nombre: "Raciones Espaciales",
+    precio: 15.0,
+    stock: 2,
+    categoria: "Alimentación",
+  }
+  ],
+  total: 280.0,
 };
 
 const calcularTotal = () => {
@@ -199,10 +214,60 @@ const eliminarCarga = (req, res) => {
 
 }
 
+const confirmarCarga = (req, res) => {
+  try {
+    const { boton } = req.body;
+    if (typeof boton !== "boolean") {
+      return res.status(400).json({
+        mensaje: "El valor del botón debe ser true o false"
+      });
+    }
+
+    if (boton === false) {
+
+      const cargasEliminadas = [...estadoNave.itemsCargados];
+
+      cargasEliminadas.forEach((cargaEliminada) => {
+        const indiceBase = inventario.findIndex(
+          (item) => item.id === cargaEliminada.id
+        );
+
+        if (indiceBase !== -1) {
+          inventario[indiceBase].stock += cargaEliminada.stock;
+        } else {
+          inventario.push(cargaEliminada);
+        }
+
+        estadoNave.creditos +=
+          cargaEliminada.stock * cargaEliminada.precio;
+      });
+
+      estadoNave.itemsCargados = [];
+      calcularTotal();
+
+      return res.status(200).json({
+        mensaje: "El tiempo terminó. La carga fue devuelta al inventario",
+        carga: estadoNave,
+        inventario: inventario
+      });
+
+    }
+
+    if (boton === true) {
+      return res.status(200).json({
+        mensaje: "Misión confirmada, buena suerte en tu viaje"
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al confirmar carga' })
+  }
+}
+
 module.exports = {
   obtenerInventario,
   obtenerCarga,
   agregarCarga,
   actualizarUnidades,
-  eliminarCarga
+  eliminarCarga,
+  confirmarCarga
 };
