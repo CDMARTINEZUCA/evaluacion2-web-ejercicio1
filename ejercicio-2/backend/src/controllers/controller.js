@@ -3,22 +3,7 @@ const inventario = require("../data/data.js");
 
 let estadoNave = {
   creditos: 220.0,
-  itemsCargados: [
-    {
-    id: 201,
-    nombre: "Tanque de Oxígeno XL",
-    precio: 50.0,
-    stock: 5,
-    categoria: "Soporte Vital",
-  },
-  {
-    id: 202,
-    nombre: "Raciones Espaciales",
-    precio: 15.0,
-    stock: 2,
-    categoria: "Alimentación",
-  }
-  ],
+  itemsCargados: [],
   total: 280.0,
 };
 
