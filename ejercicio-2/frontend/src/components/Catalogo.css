@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
+
+.titulo-catalogo {
+  font-family: "Russo One", sans-serif;
+  color: #e7ebed;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.catalogo-container {
+  background-color: #051939;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.catalogo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+.catalogo-card {
+  width: 100%;
+  min-width: 250px; 
+  background-color: #f8fcff !important;
+  border-radius: 8px;
+  padding: 1px;
+}
+
+.catalogo-acciones {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.input-cantidad {
+  width: 70px;
+  text-align: center;
+}
+
+.catalogo-card h3 {
+  margin-top: 0;
+  color: #000000;
+  font-family: "Russo One", sans-serif;
+  font-size: 1.2rem;
+   text-align: left;
+   margin-left: 10px;
+}
+
+.categoria, .precio, .stock {
+  font-size: 0.9rem;
+  color: #494747;
+  margin: 4px 0;
+  margin-left: 25px;
+  text-align: left;
+}
+
+.stock.sin-stock {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+
+.btn-cargar {
+  flex: 1;
+  background-color: #45688f !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.btn-cargar:hover:not(:disabled) {
+  background-color: #457b9d !important;
+}
+
+.btn-cargar:disabled {
+  background-color: #cccccc !important;
+  color: #666666 !important;
+  cursor: not-allowed;
+}
