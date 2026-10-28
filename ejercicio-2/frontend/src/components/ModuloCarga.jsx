@@ -10,7 +10,7 @@ import PanelSuperior from './PanelSuperior';
 import CatalogoBase from './Catalogo';
 import BodegaCarga from './BodegaCarga';      
 
-const TIEMPO_MISION_SEGUNDOS = 100;
+const TIEMPO_MISION_SEGUNDOS = 60;
 
 function ModuloCarga() {
   const API_URL = 'http://localhost:3005/api';
