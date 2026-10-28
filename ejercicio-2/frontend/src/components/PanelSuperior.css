@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
+
+.contenedor-panel-superior {
+  width: 100%;
+}
+
+.titulo-mision {
+  font-family: "Russo One", sans-serif;
+  text-align: center;
+  color: #000000;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 2rem;
+}
+
+.panel-superior {
+  display: flex;
+  justify-content: space-around;
+  background-color: #051939;
+  padding: 1.5rem;
+  border-radius: 8px;
+  color: white;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  font-family: "Momo Trust Display", sans-serif;
+}
+
+.panel-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.panel-label {
+  font-size: 0.9rem;
+  color: #e7ebed;
+  margin-bottom: 5px;
+  font-family: "Russo One", sans-serif;
+}
+
+.panel-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.panel-value.creditos {
+  color: #4ecca3;
+}
+
+.panel-value.total {
+  color: #e94560;
+}
