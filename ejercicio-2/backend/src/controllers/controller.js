@@ -181,6 +181,9 @@ const eliminarCarga = (req, res) => {
     } else {
       inventario.push(cargaeliminada)
     }
+
+    calcularTotal();
+
     return res.status(200).json({
       message: "Carga eliminada correctamente de la nave y devuelta a base",
     Nave: cargaeliminada,
