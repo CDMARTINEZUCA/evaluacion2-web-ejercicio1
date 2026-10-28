@@ -7,6 +7,9 @@ let estadoNave = {
   total: 0.0,
 };
 
+const TIEMPO_LIMITE_SEGUNDOS = 60;
+let tiempoInicioMision = null;
+
 const calcularTotal = () => {
   let costoTotal = 0;
 
@@ -20,6 +23,22 @@ const calcularTotal = () => {
 
   estadoNave.total = costoTotal;
   return costoTotal;
+};
+
+const verificarTiempoExpirado = () => {
+  if (!tiempoInicioMision) return false; // Si no ha iniciado, no limitamos
+  const segundosTranscurridos = (Date.now() - tiempoInicioMision) / 1000;
+  return segundosTranscurridos > TIEMPO_LIMITE_SEGUNDOS;
+};
+
+const iniciarMision = (req, res) => {
+  // Registra la hora exacta en la que el usuario inicia la misión
+  tiempoInicioMision = Date.now();
+
+  return res.status(200).json({
+    mensaje: "Reloj de la misión iniciado",
+    tiempoLimite: TIEMPO_LIMITE_SEGUNDOS,
+  });
 };
 
 const obtenerInventario = (req, res) => {
@@ -45,6 +64,10 @@ const obtenerCarga = (req, res) => {
 
 const agregarCarga = (req, res) => {
   try {
+    
+    if (verificarTiempoExpirado()) {
+      return res.status(403).json({ mensaje: "La ventana de lanzamiento se ha cerrado. La sesión expiró." });
+    }
     const equipoId = Number(req.body.equipoId);
     const cantidad = Number(req.body.cantidad);
 
@@ -80,7 +103,7 @@ const agregarCarga = (req, res) => {
     }
 
     const indiceNave = estadoNave.itemsCargados.findIndex(
-      (item) => item.id === equipoId
+      (item) => item.id === equipoId,
     );
 
     if (indiceNave === -1) {
@@ -114,19 +137,31 @@ const agregarCarga = (req, res) => {
 
 const actualizarUnidades = (req, res) => {
   try {
-
-    const { cantidad, transaccionElegida } = req.body
-    const indiceNave = estadoNave.itemsCargados.findIndex((i) => i.id == Number(req.params.id));
-    if (indiceNave === -1) {
-      return res.status(404).json({ mensaje: "El ítem no está en la carga de la nave" });
+    
+    if (verificarTiempoExpirado()) {
+      return res.status(403).json({ mensaje: "La ventana de lanzamiento se ha cerrado. La sesión expiró." });
     }
-    const indiceBase = inventario.findIndex((i) => i.id == Number(req.params.id));
+
+    const { cantidad, transaccionElegida } = req.body;
+    const indiceNave = estadoNave.itemsCargados.findIndex(
+      (i) => i.id == Number(req.params.id),
+    );
+    if (indiceNave === -1) {
+      return res
+        .status(404)
+        .json({ mensaje: "El ítem no está en la carga de la nave" });
+    }
+    const indiceBase = inventario.findIndex(
+      (i) => i.id == Number(req.params.id),
+    );
     if (indiceBase === -1) {
-      return res.status(404).json({ mensaje: "El ítem no está en la carga de la base (inventario)" });
+      return res.status(404).json({
+        mensaje: "El ítem no está en la carga de la base (inventario)",
+      });
     }
     const cant = Number(cantidad);
-    const itemNave = estadoNave.itemsCargados[indiceNave]
-    const itemBase = inventario[indiceBase]
+    const itemNave = estadoNave.itemsCargados[indiceNave];
+    const itemBase = inventario[indiceBase];
     const costoMovimiento = cant * itemBase.precio;
     if (itemNave.stock === undefined || itemNave.stock === null) {
       itemNave.stock = 0;
@@ -137,21 +172,26 @@ const actualizarUnidades = (req, res) => {
         return res.status(400).json({ mensaje: "Stock en base insuficiente" });
       }
       if (estadoNave.creditos < costoMovimiento) {
-        return res.status(400).json({ mensaje: "Créditos insuficientes para esta cantidad" });
+        return res
+          .status(400)
+          .json({ mensaje: "Créditos insuficientes para esta cantidad" });
       }
       itemBase.stock -= cant;
       itemNave.stock += cant;
       estadoNave.creditos -= costoMovimiento;
-
     } else if (transaccionElegida == "Eliminar") {
       if (itemNave.stock < cant) {
-        return res.status(400).json({ mensaje: "No puedes quitar más unidades de las que tienes cargadas" });
+        return res.status(400).json({
+          mensaje: "No puedes quitar más unidades de las que tienes cargadas",
+        });
       }
       itemBase.stock += cant;
       itemNave.stock -= cant;
       estadoNave.creditos += costoMovimiento;
     } else {
-      return res.status(400).json({ mensaje: "Transacción no válida o no especificada" });
+      return res
+        .status(400)
+        .json({ mensaje: "Transacción no válida o no especificada" });
     }
 
     calcularTotal();
@@ -163,23 +203,32 @@ const actualizarUnidades = (req, res) => {
       itemModificado: itemNave,
       creditosRestantes: estadoNave.creditos,
       totalCostoNave: estadoNave.total,
-      inventarioBaseStockRestante: itemBase.stock
-    })
+      inventarioBaseStockRestante: itemBase.stock,
+    });
   } catch (error) {
-    res.status(400).json({ mensaje: 'Error al actualizar la carga' })
+    res.status(400).json({ mensaje: "Error al actualizar la carga" });
   }
-}
+};
 
 const eliminarCarga = (req, res) => {
   try {
-    const indiceNave = estadoNave.itemsCargados.findIndex((i) => i.id == Number(req.params.id));
-    const indiceBase = inventario.findIndex((i) => i.id == Number(req.params.id));
+
+    if (verificarTiempoExpirado()) {
+      return res.status(403).json({ mensaje: "La ventana de lanzamiento se ha cerrado. La sesión expiró." });
+    }
+
+    const indiceNave = estadoNave.itemsCargados.findIndex(
+      (i) => i.id == Number(req.params.id),
+    );
+    const indiceBase = inventario.findIndex(
+      (i) => i.id == Number(req.params.id),
+    );
 
     const [cargaeliminada] = estadoNave.itemsCargados.splice(indiceNave, 1);
     if (indiceBase !== -1) {
-      inventario[indiceBase].stock += cargaeliminada.stock
+      inventario[indiceBase].stock += cargaeliminada.stock;
     } else {
-      inventario.push(cargaeliminada)
+      inventario.push(cargaeliminada);
     }
 
     estadoNave.creditos += cargaeliminada.stock * cargaeliminada.precio;
@@ -191,30 +240,27 @@ const eliminarCarga = (req, res) => {
       Base: inventario,*/
       creditosRestantes: estadoNave.creditos,
       totalCostoNave: estadoNave.total,
-
     });
   } catch (error) {
-    res.status(500).json({ mensaje: 'Error al eliminar carga' })
+    res.status(500).json({ mensaje: "Error al eliminar carga" });
   }
-
-}
+};
 
 const confirmarCarga = (req, res) => {
   try {
     const { boton } = req.body;
     if (typeof boton !== "boolean") {
       return res.status(400).json({
-        mensaje: "El valor del botón debe ser true o false"
+        mensaje: "El valor del botón debe ser true o false",
       });
     }
 
     if (boton === false) {
-
       const cargasEliminadas = [...estadoNave.itemsCargados];
 
       cargasEliminadas.forEach((cargaEliminada) => {
         const indiceBase = inventario.findIndex(
-          (item) => item.id === cargaEliminada.id
+          (item) => item.id === cargaEliminada.id,
         );
 
         if (indiceBase !== -1) {
@@ -223,36 +269,38 @@ const confirmarCarga = (req, res) => {
           inventario.push(cargaEliminada);
         }
 
-        estadoNave.creditos +=
-          cargaEliminada.stock * cargaEliminada.precio;
+        estadoNave.creditos += cargaEliminada.stock * cargaEliminada.precio;
       });
 
       estadoNave.itemsCargados = [];
       calcularTotal();
 
+      tiempoInicioMision = null;
+
       return res.status(200).json({
         mensaje: "El tiempo terminó. La carga fue devuelta al inventario",
         carga: estadoNave,
-        inventario: inventario
+        inventario: inventario,
       });
-
     }
 
     if (boton === true) {
+      tiempoInicioMision = null;
       return res.status(200).json({
-        mensaje: "Misión confirmada, buena suerte en tu viaje"
+        mensaje: "Misión confirmada, buena suerte en tu viaje",
       });
     }
   } catch (error) {
-    res.status(500).json({ mensaje: 'Error al confirmar carga' })
+    res.status(500).json({ mensaje: "Error al confirmar carga" });
   }
-}
+};
 
 module.exports = {
+  iniciarMision,
   obtenerInventario,
   obtenerCarga,
   agregarCarga,
   actualizarUnidades,
   eliminarCarga,
-  confirmarCarga
+  confirmarCarga,
 };
